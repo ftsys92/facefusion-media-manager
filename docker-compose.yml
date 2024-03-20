@@ -1,0 +1,83 @@
+services:
+ ui:
+  build:
+   context: ./ui
+   dockerfile: Dockerfile
+  volumes:
+  - ./ui:/usr/src/app
+  - ./ui/worker.sh:/usr/src/app/worker.sh
+  - ./ui/worker-dev.sh:/usr/src/app/worker-dev.sh
+  depends_on:
+  - facefusion
+
+ facefusion:
+  build:
+   context: ./facefusion
+   dockerfile: Dockerfile
+  extra_hosts:
+  - "my-site.local:172.17.0.1"
+  volumes:
+  - facefusion:/usr/src/app
+  - ./facefusion/worker.sh:/usr/src/app/worker.sh
+  - ./facefusion/api.py:/usr/src/app/api.py
+  - ./facefusion/thumbs.py:/usr/src/app/thumbs.py
+  - ./facefusion/worker.py:/usr/src/app/worker.py
+  - ./facefusion/certs/rootCA.crt:/usr/local/share/ca-certificates/rootCA.crt
+  environment:
+  - FLASK_ENV=production
+  - REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+  - API_KEY=secret
+  depends_on:
+  - redis
+  deploy:
+   resources:
+    reservations:
+     devices:
+     - driver: nvidia
+       capabilities: [ gpu, video ]
+  
+ stable-diffusion:
+   build:
+    context: ./stable-diffusion
+    dockerfile: Dockerfile
+   volumes:
+    - stable-diffusion:/usr/src/app
+    - ./stable-diffusion/data:/usr/src/app/models/Stable-diffusion
+   deploy:
+    resources:
+     reservations:
+      devices:
+      - driver: nvidia
+        capabilities: [ gpu, video ]
+  
+ nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/ssl.conf:/etc/nginx/ssl.conf
+      - ./nginx/certs:/etc/nginx/certs
+    ports:
+      - "80:80"
+      - "443:443"
+      - "5000:5000"
+      - "7881:7881"
+    depends_on:
+      - ui
+      - facefusion
+    command: "nginx -g \"daemon off;\""
+
+ redis:
+  image: redis:latest
+  healthcheck:
+   test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+   interval: 1s
+   timeout: 3s
+   retries: 5
+  command: ["redis-server"]
+
+volumes:
+  ui:
+  facefusion:
+  stable-diffusion:

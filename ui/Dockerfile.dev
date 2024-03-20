@@ -1,0 +1,6 @@
+FROM node:latest
+
+# Create app directory
+WORKDIR /usr/src/app
+
+CMD ["/usr/src/app/worker-dev.sh"]

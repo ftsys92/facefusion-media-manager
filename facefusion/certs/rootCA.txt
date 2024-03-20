@@ -1,0 +1,3 @@
+Put Self-Trusted Root CA certificate to this folder.
+
+RootCA.crt in PEM format.
