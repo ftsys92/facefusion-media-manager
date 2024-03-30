@@ -2,7 +2,7 @@ services:
  ui:
   build:
    context: ./ui
-   dockerfile: Dockerfile
+   dockerfile: Dockerfile.dev
   volumes:
   - ./ui:/usr/src/app
   - ./ui/worker.sh:/usr/src/app/worker.sh
@@ -15,7 +15,10 @@ services:
    context: ./facefusion
    dockerfile: Dockerfile
   extra_hosts:
-  - "my-site.local:172.17.0.1"
+  - "phh.internal:172.17.0.1"
+  - "ff.phh.internal:172.17.0.1"
+  - "sd.phh.internal:172.17.0.1"
+
   volumes:
   - facefusion:/usr/src/app
   - ./facefusion/worker.sh:/usr/src/app/worker.sh
@@ -42,7 +45,8 @@ services:
     dockerfile: Dockerfile
    volumes:
     - stable-diffusion:/usr/src/app
-    - ./stable-diffusion/data:/usr/src/app/models/Stable-diffusion
+    - ./stable-diffusion/data/models/Stable-diffusion:/usr/src/app/models/Stable-diffusion
+    - ./stable-diffusion/data/models/Lora:/usr/src/app/models/Lora
    deploy:
     resources:
      reservations:
@@ -61,8 +65,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "5000:5000"
-      - "7881:7881"
     depends_on:
       - ui
       - facefusion

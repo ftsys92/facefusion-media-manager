@@ -13,4 +13,4 @@ USER appuser
 RUN git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui .
 RUN chmod +x webui.sh
 
-CMD ["/bin/bash", "/usr/src/app/webui.sh", "--listen", "--api", "--medvram-sdxl", "--xformers", "--cors-allow-origins", "https://my-site.local, https://my-site.local:5000"]
+CMD ["/bin/bash", "/usr/src/app/webui.sh", "--listen", "--api", "--medvram-sdxl", "--xformers", "--cors-allow-origins", "https://phh.internal, https://ff.phh.internal"]

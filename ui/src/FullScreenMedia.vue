@@ -1,6 +1,6 @@
 <template>
     <div v-if="props.mediaSrc" tabindex="0" class="flex flex-col items-stretch relative" ref="wrapper"
-        @keydown.space="doSwipeLeft">
+        @keydown.space="doSwipeRight">
         <PinchScrollZoom v-if="current.endsWith('.png') || current.endsWith('.jpg')" centered key-actions
             :within="false" :width="windowWidth" :height="windowHeight">
             <img :src="current" class="rounded-md w-full h-full object-contain rotate" draggable="false" :class="{
@@ -21,10 +21,10 @@
             @click.prevent="rotate">↻</span>
         <span
             class="pointer-events-auto text-[2.25rem] text-green-400 opacity-[0.3] hover:opacity-100 cursor-pointer absolute top-[45%] ml-2"
-            @click.prevent="doSwipeRight">&larr;</span>
+            @click.prevent="doSwipeLeft">&larr;</span>
         <span
             class="pointer-events-auto text-[2.25rem] text-green-400 opacity-[0.3] hover:opacity-100 cursor-pointer absolute top-[45%] right-0 mr-2"
-            @click.prevent="doSwipeLeft">&rarr;</span>
+            @click.prevent="doSwipeRight">&rarr;</span>
     </div>
 </template>
 <script setup>
@@ -46,12 +46,13 @@ const current = ref(props.mediaSrc);
 
 const doSwipeLeft = () => {
     const index = props.list.findIndex((e) => e.url === current.value)
-    current.value = props.list[index < props.list.length - 1 ? index + 1 : 0].url
+    current.value = props.list[index > 0 ? index - 1 : props.list.length - 1].url
+
 }
 
 const doSwipeRight = () => {
     const index = props.list.findIndex((e) => e.url === current.value)
-    current.value = props.list[index > 0 ? index - 1 : props.list.length - 1].url
+    current.value = props.list[index < props.list.length - 1 ? index + 1 : 0].url
 }
 
 const windowWidth = ref(window?.innerWidth);

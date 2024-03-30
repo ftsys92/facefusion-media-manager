@@ -3,7 +3,7 @@
         <div class="flex flex-col items-start justify-between p-2 gap-2">
             <div class="flex items-center justify-between w-full">
                 <h2 class="text-lg font-bold mb-2 cursor-pointer" @click="show = !show">
-                    Outputs
+                    <span class="text-xs">{{ show ? '&#9660;' : '&#9650;' }}</span> Outputs
                 </h2>
                 <media-type-select v-model="mediaType" class="w-[150px]"></media-type-select>
             </div>
@@ -42,11 +42,11 @@
 
 
                 <div class="flex items-center justify-between px-1 py-2">
-                    <span class="text-sm text-black font-semibold truncate">
+                    <span class="text-xs text-black font-semibold truncate">
                         {{ file.name }}
                     </span>
                     <div class="flex items-center justify-between gap-1">
-                        <span class="select-none text-lg md:text-sm cursor-pointer"
+                        <span class="select-none text-md md:text-sm cursor-pointer"
                             @click.stop="deleteFile(file.name)">&#128465;</span>
                     </div>
                 </div>
@@ -112,7 +112,6 @@ const filteredMediaFiles = computed(() => {
     if (props.source) {
         filtered = filtered.filter((f) => {
             const sourceName = f.name.split('_')[1];
-            
             return sourceName === props.source.name.split('.')[0];
         })
     }

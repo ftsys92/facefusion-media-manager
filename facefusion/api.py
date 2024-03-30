@@ -10,6 +10,7 @@ from flask_socketio import SocketIO, emit
 from rq.job import Job, get_current_job
 from rq import Queue
 from werkzeug.middleware.proxy_fix import ProxyFix
+import requests
 
 MIME_TYPES_TO_EXTENSIONS = {
     "image/jpeg": ".jpg",
@@ -26,12 +27,12 @@ app.config["RQ_REDIS_URL"] = (
 # Initialize RQ
 rq = RQ(app)
 socketio = SocketIO(app, message_queue=RQ_REDIS_URL)
-socketio.init_app(app, cors_allowed_origins=["https://my-site.local"])
+socketio.init_app(app, cors_allowed_origins=["https://phh.internal"])
 
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1, x_for=1)
 auth = HTTPTokenAuth(scheme="Bearer")
 
-CORS(app,supports_credentials=True, origins=["https://my-site.local"])
+CORS(app,supports_credentials=True, origins=["https://phh.internal"])
 
 API_KEY = os.environ.get("API_KEY")
 SOURCE_DIR = "/usr/src/app/source"
@@ -148,6 +149,65 @@ def download_source():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+import base64
+@app.route("/inpaint", methods=["POST"])
+@auth.login_required
+def inpaint():
+    data = request.json
+    source = data['source']
+    image = data['image']
+    mask = data['mask']
+    width = data['width']
+    height = data['height']
+
+    payload = {
+        "init_images": [image],
+        "resize_mode": 1,
+        "width": width,
+        "height": height,
+        "denoising_strength": 0.9,
+        "mask": mask,
+        "mask_blur": 8,
+        "prompt": "",  # Fill in with actual value
+        "negative_prompt": "" # Fill in with actual value
+        "steps": 45,
+        "sampler_index": "DPM++ 2M Karras",
+        "inpaint_full_res": False,
+    }
+
+    api_url = "https://sd.phh.internal/sdapi/v1/img2img"
+
+    try:
+        # Make the POST request to the next API
+        response = requests.post(api_url, json=payload)
+
+        result = response.json()
+        image = result['images'][0]
+
+        if not image.startswith('data:image'):
+            # If not, prepend the data URL prefix
+            image = 'data:image/png;base64,' + image
+
+        # The incoming Base64 string has a prefix that needs to be removed before decoding
+        header, encoded = image.split(",", 1)
+
+        # Decode the Base64 string, correcting padding issues
+        if len(encoded) % 4:
+            encoded += '=' * (4 - len(encoded) % 4)
+        decoded = base64.b64decode(encoded)
+
+        output_file_name = f"{int(time.time())}_{source}"
+
+        # Save the image
+        with open(os.path.join(OUTPUT_DIR, output_file_name), 'wb') as f:
+            f.write(decoded)
+
+        file_url = url_for('serve_file', dir="output", filename=output_file_name, _external=True),
+
+        return jsonify({"name": output_file_name, "url": file_url[0]}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Route to delete a file
 @app.route("/delete_file", methods=["DELETE"])
@@ -219,6 +279,20 @@ def serve_file(dir, filename):
         return jsonify({"error": "Wrong dir"}), 400
 
     return send_from_directory(dir_path, filename)
+
+from rq.command import send_kill_horse_command
+from rq.worker import Worker, WorkerStatus
+# Route to serve files from the output directory
+@app.route("/stop-all", methods=["POST"])
+# @auth.login_required
+def stop_all():
+    rq.get_queue().empty()
+    workers = Worker.all(rq.connection)
+    for worker in workers:
+        if worker.state == WorkerStatus.BUSY:
+            send_kill_horse_command(rq.connection, worker.name)
+
+    return jsonify({"success": True})
 
 
 def run_job(command, output_file):

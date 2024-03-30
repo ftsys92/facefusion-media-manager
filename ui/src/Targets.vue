@@ -3,19 +3,25 @@
         <div class="flex flex-col items-start justify-between gap-2">
             <div class="flex items-start justify-between w-full">
                 <h2 class="text-lg font-bold mb-2 cursor-pointer" @click="show = !show">
-                    Targets <span class="text-xs">{{ selected.length }}</span>
+                    <span class="text-xs">{{ show ? '&#9660;' : '&#9650;' }}</span>Targets <span class="text-xs">{{
+                    selected.length }}</span>
                 </h2>
                 <div class="flex flex-col items-end md:flex-row  md:items-center gap-1">
                     <media-type-select v-model="mediaType" class="w-[150px]"></media-type-select>
-                    <button
-                        class="rounded-md bg-indigo-600 px-3 py-1 text-[0.8125rem] font-semibold leading-5 text-white hover:bg-indigo-500"
-                        @click="() => {
+                    <div class="flex items-center justify-between">
+                        <button
+                            class="rounded-md bg-indigo-600 px-3 py-1 text-[0.8125rem] font-semibold leading-5 text-white hover:bg-indigo-500"
+                            @click="() => {
                     if (selected.length) {
                         selected = []
                     } else {
                         selected = filteredTargets
                     }
                 }">{{ selected.length ? 'Des. all' : 'Sel. all' }}</button>
+                        <button
+                            :disabled="!selected.length"
+                            class="rounded-md bg-indigo-600 px-3 py-1 text-[0.8125rem] font-semibold leading-5 text-white hover:bg-indigo-500">Delete Selected</button>
+                    </div>
                 </div>
             </div>
             <div class="flex flex-col items-start justify-between gap-2 w-full md:flex-row md:items-center">
@@ -32,8 +38,8 @@
             <media-upload ref="mediaUpload" @change="($event) => {
                     targetFileUrl = $event
                 }" class="max-h-96 w-full"></media-upload>
-            <button
-                class="self-end rounded-md bg-indigo-600 px-3 py-1 text-[0.8125rem] font-semibold leading-5 text-white hover:bg-indigo-500"
+            <button :disabled="!targetFileUrl"
+                class="disabled:opacity-50 self-end rounded-md bg-indigo-600 px-3 py-1 text-[0.8125rem] font-semibold leading-5 text-white hover:bg-indigo-500"
                 @click="addTargetFile">Add</button>
         </div>
         <ul v-show="show" class="grid grid-cols-2 md:grid-cols-6 gap-5 p-2">
@@ -51,13 +57,13 @@
 
 
                 <div class="flex items-center justify-between px-1 py-2">
-                    <span class="text-sm text-black font-semibold truncate">
+                    <span class="text-xs text-black font-semibold truncate">
                         {{ file.name }}
                     </span>
                     <div class="flex items-center justify-between gap-2">
-                        <span class="select-none text-lg md:text-sm  cursor-pointer"
+                        <span class="select-none text-md md:text-sm  cursor-pointer"
                             @click.stop="toggleFullscreen(file)">☐</span>
-                        <span class="select-none text-lg md:text-sm  cursor-pointer"
+                        <span class="select-none text-md md:text-sm  cursor-pointer"
                             @click.stop="deleteFile(file.name)">&#128465;</span>
                     </div>
                 </div>
@@ -175,6 +181,7 @@ const addTargetFile = async () => {
         mediaUpload.value.mediaSrc = undefined;
         mediaUpload.value.mediaType = undefined;
     } catch (error) {
+        alert('There was an error!')
         console.error('There was an error!', error);
     }
 }
@@ -214,6 +221,15 @@ const toggleSelection = (file) => {
     } else {
         selected.value.push(file);
     }
+}
+
+const deleteSelected = () => {
+    const pending = [...selected.value]
+
+    pending.forEach(async (e, i) => {
+        await deleteFile(e.name)
+        selected.value.splice(i, 1);
+    })
 }
 
 const faceEnhancer = ref(false);

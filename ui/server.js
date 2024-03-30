@@ -10,7 +10,7 @@ const app = express();
 const PORT = 3000;
 
 app.use(cors({
-    origin: 'https://my-site.local',
+    origin: 'https://phh.internal',
 }))
 
 // Middleware to serve static files

@@ -1,0 +1,5 @@
+.env
+facefusion/certs/*
+nginx/certs/*
+stable-diffusion/data/*
+!stable-diffusion/data/PutSDModelsHere.txt

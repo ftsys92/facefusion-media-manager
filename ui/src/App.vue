@@ -1,9 +1,9 @@
 <template>
   <div v-if="!auth" class="bg-slate-600 relative h-full p-2">
     <div class="flex flex-col items-center gap-1 max-w-60 mx-auto">
-      <input
+      <!--<input
         class="block w-full appearance-none bg-white px-1 text-base text-slate-900 placeholder:text-slate-600 focus:outline-none sm:text-sm sm:leading-6"
-        v-model="server" placeholder="Enter server url" />
+        v-model="server" placeholder="Enter server url" />-->
       <input
         type="password"
         class="block w-full appearance-none bg-white px-1 text-base text-slate-900 placeholder:text-slate-600 focus:outline-none sm:text-sm sm:leading-6"
@@ -15,11 +15,15 @@
   </div>
   <div v-else class="relative h-full">
     <div class="flex items-center justify-between bg-slate-600 p-2 sticky top-0 z-10">
-      <a href="#" class="text-xl tracking-tight font-bold  text-white">PHOME HUB <span class="text-xs">({{ jobs.length }} in progress)</span></a>
+      <a href="#" class="flex flex-col items-start text-xl tracking-tight font-bold  text-white">
+        PHOME HUB <span class="text-xs">({{ jobs.length }} in progress)</span></a>
       <div class="flex items-center justify-between gap-2">
         <button :disabled="!source?.selected || !target?.selected?.length"
           class="rounded-md bg-indigo-600 px-3 py-2 text-[0.8125rem] font-semibold leading-5 text-white hover:bg-indigo-500 disabled:bg-gray-500 disabled:cursor-not-allowed"
           @click="proceed">Proceed</button>
+        <button :disabled="!jobs.length"
+          class="disabled:opacity-50 rounded-md bg-indigo-600 px-3 py-2 text-[0.8125rem] font-semibold leading-5 text-white hover:bg-indigo-500 disabled:bg-gray-500 disabled:cursor-not-allowed"
+          @click="stopAll">Stop All</button>
         <button
           class="rounded-md bg-indigo-600 px-3 py-2 text-[0.8125rem] font-semibold leading-5 text-white hover:bg-indigo-500"
           @click="logout">Logout</button>
@@ -29,7 +33,9 @@
     <div class="flex flex-col items-start justify-between px-1 gap-5">
       <!-- SOURCES -->
 
-      <sources ref="source"></sources>
+      <sources ref="source" @inpainted="(event) => {
+        output?.mediaFiles?.unshift(event)
+      }"></sources>
       <hr class="w-full" />
 
       <!-- TARGETS -->
@@ -53,7 +59,7 @@ import { useWebsocket } from './hooks/useWebsocket';
 import { useNormalizeUrl } from './hooks/useNormalizeUrl';
 
 const auth = ref(false);
-const server = ref(sessionStorage.getItem('server', ''));
+const server = ref(sessionStorage.getItem('server') || 'ff.phh.internal');
 const key = ref(sessionStorage.getItem('key') || '');
 
 
@@ -90,6 +96,7 @@ const login = async () => {
       jobs.value = jobs.value.filter((j) => j.job_id !== event.job_id);
     });
   } catch (error) {
+    alert('There was an error!');
     console.error('There was an error!', error);
   }
 };
@@ -135,7 +142,23 @@ const proceed = async () => {
 
     jobs.value.unshift(...response.data);
   } catch (error) {
+    alert('There was an error!');
     console.error('There was an error!', error);
   }
 }
+const stopAll = async () => {
+  try {
+    await axios(`${useNormalizeUrl(server.value)}/stop-all`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key.value}`
+      },
+    });
+
+    jobs.value = [];
+  } catch (error) {
+    console.error('There was an error!', error);
+  }
+}
+
 </script>
