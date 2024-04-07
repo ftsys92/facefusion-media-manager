@@ -150,8 +150,8 @@ const processInpaint = async (mask) => {
     const response = await axios.post(`${useNormalizeUrl(server.value)}/inpaint`, {
         source: inpaintSource.value.name,
         image: mask.image,
-        width: mask.h > 1000 ? mask.w / 2 : mask.w,
-        height: mask.h > 1000 ? mask.h / 2 : mask.h,
+        width: mask.w,
+        height: mask.h,
         mask: mask.mask,
     }, {
         headers: {

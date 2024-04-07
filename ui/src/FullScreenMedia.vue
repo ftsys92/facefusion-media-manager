@@ -17,6 +17,9 @@
             class="pointer-events-auto text-[2.25rem] text-green-400 opacity-[0.3] hover:opacity-100 cursor-pointer absolute bottom-10 right-3 mr-2"
             @click.prevent="exitFullscreen">&times;</span>
         <span
+            class="pointer-events-auto text-[2.25rem] text-green-400 opacity-[0.3] hover:opacity-100 cursor-pointer absolute bottom-10 right-24 mr-2"
+            @click.prevent="playPause">{{ slideShowRunning ? '&#10073;&#10073;' : '&#9658;' }}</span>
+        <span
             class="pointer-events-auto text-[2.25rem] text-green-400 opacity-[0.3] hover:opacity-100 cursor-pointer absolute bottom-10 right-12 mr-2"
             @click.prevent="rotate">↻</span>
         <span
@@ -72,6 +75,8 @@ onMounted(() => {
 })
 
 const exitFullscreen = () => {
+    slideShowRunning.value = false;
+    clearInterval(slideShowInterval.value);
     if (document.fullscreenElement) {
         document.exitFullscreen();
     }
@@ -88,5 +93,19 @@ const currentRotateIndex = ref(0)
 const rotate = () => {
     currentRotateIndex.value = currentRotateIndex.value >= rotateClasses.value.length - 1 ? 0 : currentRotateIndex.value + 1
     console.log(currentRotateIndex.value)
+}
+
+const slideShowRunning = ref(false);
+const slideShowInterval = ref();
+const playPause = () => {
+    if (slideShowRunning.value) {
+        slideShowRunning.value = false;
+        clearInterval(slideShowInterval.value);
+        return;
+    }
+    slideShowRunning.value = true;
+    slideShowInterval.value = setInterval(() => {
+        doSwipeRight();
+    }, 8000);
 }
 </script>
