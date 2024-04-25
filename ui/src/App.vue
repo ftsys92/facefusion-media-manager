@@ -4,8 +4,7 @@
       <!--<input
         class="block w-full appearance-none bg-white px-1 text-base text-slate-900 placeholder:text-slate-600 focus:outline-none sm:text-sm sm:leading-6"
         v-model="server" placeholder="Enter server url" />-->
-      <input
-        type="password"
+      <input type="password"
         class="block w-full appearance-none bg-white px-1 text-base text-slate-900 placeholder:text-slate-600 focus:outline-none sm:text-sm sm:leading-6"
         v-model="key" placeholder="Enter key" />
       <button
@@ -40,11 +39,15 @@
 
       <!-- TARGETS -->
       <targets :source="source?.selected" :outputs="[...(output?.mediaFiles || []), ...jobs.map((r) => r.output_file)]"
-        ref="target"></targets>
+        @inpainted="(event) => {
+          output?.mediaFiles?.unshift(event)
+        }" ref="target"></targets>
       <hr class="w-full" />
 
       <!-- OUTPUTS -->
-      <outputs ref="output" :source="source?.selected"></outputs>
+      <outputs ref="output" :source="source?.selected" @inpainted="(event) => {
+        output?.mediaFiles?.unshift(event)
+      }"></outputs>
     </div>
   </div>
 
@@ -65,7 +68,7 @@ const key = ref(sessionStorage.getItem('key') || '');
 
 
 const login = async () => {
-  if (!server.value) {
+  if (!key.value) {
     alert('You are not authenticated!');
     return;
   }

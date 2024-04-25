@@ -1,42 +1,64 @@
 <template>
-    <div tabindex="0" class="flex flex-col items-stretch relative gap-2 text-xs rounded-md select-none p-4"
-        ref="wrapper">
-        <div class="flex items-center justify-between bg-white p-2 shadow-lg rounded-md">
-            <div class="flex flex-col items-start gap-2">
-                <input type="color" v-model="brushColor" class="form-control">
-                <input type="range" v-model="brushSize" min="1" max="50" class="range range-primary">
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-                <button @click="saveImage"
-                    class="text-xs py-0.5 px-2 bg-violet-700 text-white border border-violet-400 rounded-lg shadow-md disabled:opacity-50">Save</button>
-                <button @click="close"
-                    class="text-xs py-0.5 px-2 bg-violet-700 text-white border border-violet-400 rounded-lg shadow-md disabled:opacity-50">Close</button>
-                <button @click="toggleDrawing"
-                    class="text-xs py-0.5 px-2 bg-violet-700 text-white border border-violet-400 rounded-lg shadow-md disabled:opacity-50">{{
-                    isDrawing ? 'Move' : 'Draw' }}</button>
-                <button @click="reset"
-                    class="text-xs py-0.5 px-2 bg-violet-700 text-white border border-violet-400 rounded-lg shadow-md disabled:opacity-50">Reset</button>
+    <div class="flex flex-col md:flex-row items-start gap-2 w-full p-4">
+        <div tabindex="0"
+            class="flex flex-col items-stretch relative gap-2 text-xs rounded-md select-none w-full sm:w-[700px] h-[600px]"
+            ref="wrapper">
+            <div class="flex items-center justify-between bg-white p-2 shadow-lg rounded-md">
+                <div class="flex flex-col items-start gap-2">
+                    <input type="color" v-model="brushColor" class="form-control">
+                    <input type="range" v-model="brushSize" min="1" max="50" class="range range-primary">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button @click="saveImage"
+                        class="text-xs py-0.5 px-2 bg-violet-700 text-white border border-violet-400 rounded-lg shadow-md disabled:opacity-50">Save</button>
+                    <button @click="close"
+                        class="text-xs py-0.5 px-2 bg-violet-700 text-white border border-violet-400 rounded-lg shadow-md disabled:opacity-50">Close</button>
+                    <button @click="toggleDrawing"
+                        class="text-xs py-0.5 px-2 bg-violet-700 text-white border border-violet-400 rounded-lg shadow-md disabled:opacity-50">{{
+                            isDrawing ? 'Move' : 'Draw' }}</button>
+                    <button @click="reset"
+                        class="text-xs py-0.5 px-2 bg-violet-700 text-white border border-violet-400 rounded-lg shadow-md disabled:opacity-50">Reset</button>
 
+                </div>
+            </div>
+
+            <PinchScrollZoom v-if="windowWidth && windowHeight" ref="zoomer" centered :draggable="!isDrawing"
+                :within="true" class="rounded-md overflow-hidden w-full h-full bg-black">
+                <div class="relative">
+                    <canvas :width="canvasWidth" :height="canvasHeight" class="rounded-md absolute top-0 left-0"
+                        ref="canvasRef" @mousedown="startDrawing" @mousemove="draw" @mouseup="stopDrawing"
+                        @mouseleave="stopDrawing" @touchstart.prevent="startDrawing" @touchmove.prevent="draw"
+                        @touchend.prevent="stopDrawing">
+                    </canvas>
+                    <img :src="props.image.url" ref="imageRef" class="rounded-md w-full h-full object-contain rotate"
+                        draggable="false" />
+                </div>
+            </PinchScrollZoom>
+        </div>
+        <div class="flex flex-col items-start w-full gap-2">
+            <div class="flex flex-col items-start w-full">
+                <span class="font-semibold">
+                    Prompt
+                </span>
+                <textarea class="w-full outline-none p-2 border border-solid text-xs" rows="3"
+                    v-model="prompt"></textarea>
+            </div>
+            <div class="flex flex-col items-start w-full">
+                <span class="font-semibold">
+                    Negative Prompt
+                </span>
+                <textarea class="w-full outline-none p-2 border border-solid text-xs" rows="3"
+                    v-model="negativePrompt"></textarea>
             </div>
         </div>
-
-        <PinchScrollZoom v-if="windowWidth && windowHeight" ref="zoomer" centered :draggable="!isDrawing" :within="true"
-            class="rounded-md overflow-hidden w-full h-full bg-black">
-            <div class="relative">
-                <canvas :width="canvasWidth" :height="canvasHeight" class="rounded-md absolute top-0 left-0"
-                    ref="canvasRef" @mousedown="startDrawing" @mousemove="draw" @mouseup="stopDrawing"
-                    @mouseleave="stopDrawing" @touchstart.prevent="startDrawing" @touchmove.prevent="draw"
-                    @touchend.prevent="stopDrawing">
-                </canvas>
-                <img :src="props.image.url" ref="imageRef" class="rounded-md w-full h-full object-contain rotate"
-                    draggable="false" />
-            </div>
-        </PinchScrollZoom>
     </div>
+
 </template>
 <script setup>
 import PinchScrollZoom from '@coddicat/vue-pinch-scroll-zoom';
 import { nextTick, onMounted, ref, reactive } from 'vue';
+import axios from 'axios';
+import { useNormalizeUrl } from '../hooks/useNormalizeUrl';
 
 const props = defineProps({
     image: {
@@ -45,7 +67,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['mask', 'close']);
+const emit = defineEmits(['inpainted', 'close']);
 
 const canvasRef = ref(null);
 const imageRef = ref(null);
@@ -105,7 +127,7 @@ const startDrawing = (event) => {
     [drawingState.lastX, drawingState.lastY] = [x, y];
 };
 
-const brushSize = ref(5);
+const brushSize = ref(20);
 const brushColor = ref('#a78bfa')
 const draw = (event) => {
     if (!drawingState.isDrawing) return;
@@ -201,12 +223,14 @@ const saveImage = async () => {
     // Convert the temporary canvas to a data URL and output it
     const mask = tempCanvas.toDataURL("image/png");
 
-    emit('mask', {
+    const payload = {
         image: await convertImageToBase64(props.image.url),
         mask,
         w: naturalWidth,
         h: naturalHeight
-    });
+    }
+
+    await processInpaint(payload);
 
     // Clean up: remove the temporary canvas if not needed anymore
     tempCanvas.remove();
@@ -229,8 +253,27 @@ async function convertImageToBase64(imageUrl) {
     }
 }
 
+const prompt = ref('');
+const negativePrompt = ref('');
 
+const server = ref(sessionStorage.getItem('server', ''));
+const key = ref(sessionStorage.getItem('key') || '');
 
+const processInpaint = async (mask) => {
+    const response = await axios.post(`${useNormalizeUrl(server.value)}/inpaint`, {
+        source: props.image.name,
+        image: mask.image,
+        width: mask.w,
+        height: mask.h,
+        mask: mask.mask,
+        prompt: prompt.value,
+        negative_prompt: negativePrompt.value,
+    }, {
+        headers: {
+            Authorization: `Bearer ${key.value}`
+        }
+    });
 
-
+    emit('inpainted', response?.data)
+}
 </script>

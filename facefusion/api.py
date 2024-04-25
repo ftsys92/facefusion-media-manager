@@ -159,6 +159,9 @@ def inpaint():
     mask = data['mask']
     width = data['width']
     height = data['height']
+    prompt = data['prompt']
+    negative_prompt = data['negative_prompt']
+
 
     payload = {
         "init_images": [image],
@@ -167,10 +170,10 @@ def inpaint():
         "height": height,
         "denoising_strength": 0.9,
         "mask": mask,
-        "mask_blur": 8,
-        "prompt": "",  # Fill in with actual value
-        "negative_prompt": "" # Fill in with actual value
-        "steps": 45,
+        "mask_blur": 5,
+        "prompt": prompt,
+        "negative_prompt": negative_prompt,
+        "steps": 26,
         "sampler_index": "DPM++ 2M Karras",
         "inpaint_full_res": False,
     }
@@ -360,6 +363,7 @@ def run_script():
         command = f"python /usr/src/app/run.py --headless \
                   --source {source_file_path} --target {target_file_path} --output {output_file_path} \
                   --execution-providers cuda \
+                  --execution-thread-count 2 \
                   {other_args} \
                   --output-image-quality 100 \
                   --output-video-quality 100 \

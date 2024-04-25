@@ -3,7 +3,7 @@
         <div class="flex flex-col items-start justify-between gap-2">
             <h2 class="text-lg font-bold mb-2 cursor-pointer" @click="show = !show">
                 <span class="text-xs">{{ show ? '&#9660;' : '&#9650;' }}</span> Sources <span class="text-xs">{{
-                selected && 1 || 0 }}</span>
+                    selected && 1 || 0 }}</span>
             </h2>
         </div>
         <div v-show="show" class="flex flex-col items-center gap-2 w-full p-1">
@@ -14,11 +14,13 @@
                 class="self-end rounded-md bg-indigo-600 px-3 py-1 text-[0.8125rem] font-semibold leading-5 text-white hover:bg-indigo-500"
                 @click="addSourceFile">Add</button>
         </div>
+        <inpaint v-if="inpaintSource" :image="inpaintSource" @close="inpaintSource = undefined"
+            @inpainted="emit('inpainted', $event)"></inpaint>
         <ul v-show="show" class="grid grid-cols-3 md:grid-cols-6 gap-5 p-2">
             <li v-for="(file, index) in mediaFiles" :key="index"
                 class="flex flex-col relative rounded-md hover:shadow-cyan-300 shadow-xl" :class="{
-                'outline outline-4 outline-cyan-400': isSelected(file)
-            }" @click.prevent="toggleSelection(file)">
+                    'outline outline-4 outline-cyan-400': isSelected(file)
+                }" @click.prevent="toggleSelection(file)">
                 <div class="flex flex-col">
                     <video v-if="file.url.endsWith('.mp4')" :src="file.url" controls
                         class="bg-black rounded-t-md h-52 sm:h-32 w-full">
@@ -33,15 +35,13 @@
                         {{ file.name }}
                     </span>
                     <div class="flex items-center justify-between gap-1">
-                        <span class="select-none text-md md:text-sm cursor-pointer" @click.stop="inpaint(file)">☐</span>
+                        <span class="select-none text-md md:text-sm cursor-pointer" @click.stop="selectInpaintSource(file)">☐</span>
                         <span class="select-none text-md md:text-sm cursor-pointer"
                             @click.stop="deleteFile(file.name)">&#128465;</span>
                     </div>
                 </div>
             </li>
         </ul>
-        <mask-draw v-if="inpaintSource" :image="inpaintSource" @close="inpaintSource = undefined" @mask="processInpaint"
-            class="w-full sm:w-[500px] h-[600px]"></mask-draw>
     </div>
 </template>
 <script setup>
@@ -49,7 +49,7 @@ import { onMounted, ref } from 'vue';
 import axios from 'axios';
 import { useNormalizeUrl } from './hooks/useNormalizeUrl';
 import MediaUpload from './MediaUpload.vue';
-import MaskDraw from './components/MaskDraw.vue';
+import Inpaint from './components/Inpaint.vue';
 
 const server = ref(sessionStorage.getItem('server', ''));
 const key = ref(sessionStorage.getItem('key') || '');
@@ -141,26 +141,11 @@ const toggleSelection = (file) => {
 }
 
 const inpaintSource = ref();
-const inpaint = (file) => {
+const selectInpaintSource = (file) => {
     inpaintSource.value = file;
 }
 
-const emit = defineEmits(['inpainted'])
-const processInpaint = async (mask) => {
-    const response = await axios.post(`${useNormalizeUrl(server.value)}/inpaint`, {
-        source: inpaintSource.value.name,
-        image: mask.image,
-        width: mask.w,
-        height: mask.h,
-        mask: mask.mask,
-    }, {
-        headers: {
-            Authorization: `Bearer ${key.value}`
-        }
-    });
-
-    emit('inpainted', response?.data)
-}
+const emit = defineEmits(['inpainted']);
 
 defineExpose({
     selected,

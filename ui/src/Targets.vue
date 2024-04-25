@@ -42,6 +42,8 @@
                 class="disabled:opacity-50 self-end rounded-md bg-indigo-600 px-3 py-1 text-[0.8125rem] font-semibold leading-5 text-white hover:bg-indigo-500"
                 @click="addTargetFile">Add</button>
         </div>
+        <inpaint v-if="inpaintSource" :image="inpaintSource" @close="inpaintSource = undefined"
+            @inpainted="emit('inpainted', $event)"></inpaint>
         <ul v-show="show" class="grid grid-cols-2 md:grid-cols-6 gap-5 p-2">
             <li v-for="(file, index) in filteredTargets" :key="index"
                 class="flex flex-col relative rounded-md  hover:shadow-cyan-300 shadow-xl" :class="{
@@ -61,6 +63,7 @@
                         {{ file.name }}
                     </span>
                     <div class="flex items-center justify-between gap-2">
+                        <span class="select-none text-md md:text-sm cursor-pointer" @click.stop="selectInpaintSource(file)">☐</span>
                         <span class="select-none text-md md:text-sm  cursor-pointer"
                             @click.stop="toggleFullscreen(file)">☐</span>
                         <span class="select-none text-md md:text-sm  cursor-pointer"
@@ -79,6 +82,7 @@ import MediaTypeSelect from './MediaTypeSelect.vue';
 import FullScreenMedia from './FullScreenMedia.vue';
 import MediaUpload from './MediaUpload.vue';
 import { useNormalizeUrl } from './hooks/useNormalizeUrl';
+import Inpaint from './components/Inpaint.vue';
 
 const props = defineProps({
     source: {
@@ -243,6 +247,13 @@ watch(() => faceEnhancer.value, (newVal) => {
         commandArgs.value = `--frame-processors face_swapper ${defaultArgs}`
     }
 }, { immediate: true })
+
+const inpaintSource = ref();
+const selectInpaintSource = (file) => {
+    inpaintSource.value = file;
+}
+
+const emit = defineEmits(['inpainted']);
 
 defineExpose({
     selected,

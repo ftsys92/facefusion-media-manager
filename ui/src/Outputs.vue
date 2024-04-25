@@ -20,24 +20,26 @@
                     @click="sortDesc">Sort Desc</button>
             </div>
         </div>
+        <inpaint v-if="inpaintSource" :image="inpaintSource" @close="inpaintSource = undefined"
+            @inpainted="emit('inpainted', $event)"></inpaint>
         <ul v-show="show" class="grid md:grid-cols-6 gap-5 p-2" :class="{
-                    'grid-cols-2': twoCol,
-                    'grid-cols-1': !twoCol
-                }">
+            'grid-cols-2': twoCol,
+            'grid-cols-1': !twoCol
+        }">
             <li v-for="(file, index) in filteredMediaFiles" :key="index"
                 class="flex flex-col relative rounded-md hover:shadow-2xl shadow-xl">
                 <div class="flex flex-col">
                     <video v-if="file.url.endsWith('.mp4')" :src="file.url" controls
                         class="bg-black rounded-t-md w-full" :class="{
-                    'h-52 sm:h-72': twoCol,
-                    'h-auto md:h-52': !twoCol
-                }">
+                            'h-52 sm:h-72': twoCol,
+                            'h-auto md:h-52': !twoCol
+                        }">
                     </video>
                     <img v-if="file.url.endsWith('.png') || file.url.endsWith('.jpg')" :src="file.url"
                         class="rounded-t-md w-full object-cover" @click="toggleFullscreen(file)" :class="{
-                    'h-52 sm:h-72': twoCol,
-                    'h-auto md:h-52': !twoCol
-                }" />
+                            'h-52 sm:h-72': twoCol,
+                            'h-auto md:h-52': !twoCol
+                        }" />
                 </div>
 
 
@@ -46,6 +48,7 @@
                         {{ file.name }}
                     </span>
                     <div class="flex items-center justify-between gap-1">
+                        <span class="select-none text-md md:text-sm cursor-pointer" @click.stop="selectInpaintSource(file)">☐</span>
                         <span class="select-none text-md md:text-sm cursor-pointer"
                             @click.stop="deleteFile(file.name)">&#128465;</span>
                     </div>
@@ -61,6 +64,7 @@ import axios from 'axios';
 import FullScreenMedia from './FullScreenMedia.vue';
 import MediaTypeSelect from './MediaTypeSelect.vue';
 import { useNormalizeUrl } from './hooks/useNormalizeUrl';
+import Inpaint from './components/Inpaint.vue';
 
 const props = defineProps({
     source: {
@@ -162,6 +166,13 @@ const shuffle = () => {
 const sortDesc = () => {
     mediaFiles.value = mediaFiles.value.sort((a, b) => b.name.split('_')[0] - a.name.split('_')[0]);
 }
+
+const inpaintSource = ref();
+const selectInpaintSource = (file) => {
+    console.log(file)
+    inpaintSource.value = file;
+}
+const emit = defineEmits(['inpainted']);
 
 defineExpose({
     mediaFiles,
