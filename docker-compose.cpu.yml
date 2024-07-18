@@ -30,15 +30,9 @@ services:
   - FLASK_ENV=production
   - REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
   - API_KEY=secret
-  - EXECUTION_PROVIDERS=cuda
+  - EXECUTION_PROVIDERS=cpu
   depends_on:
   - redis
-  deploy:
-   resources:
-    reservations:
-     devices:
-     - driver: nvidia
-       capabilities: [ gpu, video ]
   
  stable-diffusion:
    build:
@@ -48,12 +42,6 @@ services:
     - stable-diffusion:/usr/src/app
     - ./stable-diffusion/data/models/Stable-diffusion:/usr/src/app/models/Stable-diffusion
     - ./stable-diffusion/data/models/Lora:/usr/src/app/models/Lora
-   deploy:
-    resources:
-     reservations:
-      devices:
-      - driver: nvidia
-        capabilities: [ gpu, video ]
   
  nginx:
     build:

@@ -35,6 +35,7 @@ auth = HTTPTokenAuth(scheme="Bearer")
 CORS(app,supports_credentials=True, origins=["https://phh.internal"])
 
 API_KEY = os.environ.get("API_KEY")
+EXECUTION_PROVIDERS = os.environ.get("EXECUTION_PROVIDERS")
 SOURCE_DIR = "/usr/src/app/source"
 TARGET_DIR = "/usr/src/app/target"
 OUTPUT_DIR = "/usr/src/app/output"
@@ -362,7 +363,7 @@ def run_script():
         # Construct the command
         command = f"python /usr/src/app/run.py --headless \
                   --source {source_file_path} --target {target_file_path} --output {output_file_path} \
-                  --execution-providers cuda \
+                  --execution-providers {EXECUTION_PROVIDERS} \
                   --execution-thread-count 2 \
                   {other_args} \
                   --output-image-quality 100 \
